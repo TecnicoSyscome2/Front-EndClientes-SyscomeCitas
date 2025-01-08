@@ -1,0 +1,85 @@
+﻿@page "/"
+
+@inject HttpClient _HttpClient
+@inject NavigationManager NavigationManager
+
+<div class="container mt-4">
+    <!-- Campo de búsqueda -->
+    <div class="mb-3">
+        <input type="text" @bind="Busqueda" class="form-control" placeholder="Buscar empresa..." @oninput="ActualizarEmpresasFiltradas" />
+    </div>
+
+    <!-- Tarjetas de empresas -->
+    <div class="row">
+        @if (EmpresasFiltradas.Count > 0)
+        {
+            @foreach (var empresa in EmpresasFiltradas)
+            {
+                <div class="col-md-6 mb-6">
+                    <div class="card shadow">
+                     @*    <img src="@empresa.LogoUrl" alt="@empresa.NombreEmpresa" class="card-img-top img-fluid empresa-img" /> *@
+                        <div class="placeholder-image" style="height: 150px; background-color: #f8f9fa;"></div>
+                        <div class="card-body">
+                            <h5 class="card-title">@empresa.NombreEmpresa</h5>
+                            <p class="card-text text-muted">@empresa.Correo</p>
+                            <p class="card-text text-muted">@empresa.Telefono</p>
+                            <button class="btn btn-primary w-100" @onclick="() => SeleccionarEmpresa(empresa.IdEmpresa)">Reservar cita</button>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12 text-center">
+                <p class="text-muted">No se encontraron empresas que coincidan con la búsqueda.</p>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .empresa-img {
+        height: 150px;
+        object-fit: cover;
+    }
+</style>
+
+@code {
+    private string Busqueda = string.Empty;
+    private List<empresaModel> Empresas = new();
+    private List<empresaModel> EmpresasFiltradas = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Empresas = await _HttpClient.GetFromJsonAsync<List<empresaModel>>("api/Syscome/Empresa");
+            EmpresasFiltradas = Empresas;
+        }
+        catch (Exception ex)
+        {
+            // Mostrar notificación de error
+            Console.WriteLine($"Error al obtener las citas: {ex.Message}");
+        }
+    }
+
+    private void ActualizarEmpresasFiltradas(ChangeEventArgs e)
+    {
+        Busqueda = e.Value?.ToString() ?? string.Empty;
+        EmpresasFiltradas = string.IsNullOrWhiteSpace(Busqueda)
+            ? Empresas
+            : Empresas.Where(e => e.NombreEmpresa.Contains(Busqueda, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    private void SeleccionarEmpresa(int id)
+    {
+        var empresaSeleccionada = Empresas.FirstOrDefault(e => e.IdEmpresa == id);
+        if (empresaSeleccionada != null)
+        {
+            NavigationManager.NavigateTo($"/HaztuCitaAhora.com/{empresaSeleccionada.NombreEmpresa}/Productos/VerProductos/{id}");
+        }
+    }
+}
+
+

@@ -1,0 +1,83 @@
+﻿@page "/HaztuCitaAhora.com/{empresa}/Productos/VerProductos/{id:int}"
+@inject HttpClient _HttpClient
+@inject NavigationManager NavigationManager
+
+<div class="container mt-4">
+    <h3 class="text-center mb-4">Servicios Disponibles de @empresa</h3>
+    <p class="text-muted text-center">@empresa</p>
+    <div class="mb-3">
+        <input type="text" @bind="Busqueda" class="form-control" placeholder="Buscar servicio..." @oninput="ActualizarEmpresasFiltradas" />
+    </div>
+    <div class="row">
+        @if (ProductosFiltrados != null && ProductosFiltrados.Count > 0)
+        {
+            @foreach (var servicio in ProductosFiltrados)
+            {
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow">
+@*                         @if (!string.IsNullOrWhiteSpace(servicio.ImagenUrl))
+                        {
+                            <img src="@servicio.ImagenUrl" alt="@servicio.Nombre" class="card-img-top img-fluid" style="height: 150px; object-fit: cover;" />
+                        } 
+                        else
+                {*@
+                            <div class="placeholder-image" style="height: 150px; background-color: #f8f9fa;"></div>
+                       @*  } *@
+                        <div class="card-body">
+                            <h5 class="card-title">@servicio.Descripcion</h5>
+                            <p class="card-text text-muted">@servicio.Descripcion</p>
+                            <p class="text-primary font-weight-bold">Precio: @servicio.Precio:C</p>
+                            <button class="btn btn-success w-100" @onclick="() => ReservarServicio(servicio.Id)">Reservar</button>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12 text-center">
+                <p class="text-muted">No hay productos disponibles para esta empresa en este momento.</p>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int id { get; set; }
+    [Parameter]
+    public string empresa { get; set; }
+
+    private string Busqueda = string.Empty;
+    private List<ProductosModel> productos = new();
+    private List<ProductosModel> ProductosFiltrados = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var productosResponse = await _HttpClient.GetFromJsonAsync<List<ProductosModel>>($"/api/Syscome/producto/{id}");
+            productos = productosResponse ?? new List<ProductosModel>();
+            ProductosFiltrados = productos;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al obtener los productos: {ex.Message}");
+            productos = new List<ProductosModel>();
+            ProductosFiltrados = new List<ProductosModel>();
+        }
+    }
+
+    private void ReservarServicio(long servicioId)
+    {
+        NavigationManager.NavigateTo($"/HaztuCitaAhora.com/{empresa}/crear-registro/{servicioId}");
+    }
+
+    private void ActualizarEmpresasFiltradas()
+    {
+        ProductosFiltrados = string.IsNullOrWhiteSpace(Busqueda)
+            ? productos
+            : productos.Where(e => e.Descripcion.Contains(Busqueda, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+}
+

@@ -1,0 +1,182 @@
+@page "/HaztuCitaAhora.com/{empresa}/crear-registro/{id:int}"
+@using System.Text.Json
+
+@inject HttpClient _HttpClient
+
+<PageTitle>Crear Citas</PageTitle>
+
+<div class="card-header bg-primary text-white text-center">
+    <h5 class="mb-0">Crear Cita</h5>
+</div>
+<div class="card-body">
+    <EditForm Model="nuevoRegistro" OnValidSubmit="crearCita">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="alert alert-danger" />
+
+        <div class="row g-3">
+            <!-- Cliente ID -->
+@*             <div class="col-12">
+                <label class="form-label">Cliente ID:</label>
+                <InputSelect class="form-control" @bind-Value="nuevoRegistro.ClienteId">
+                    <option value="">Seleccione un cliente</option>
+                    @foreach (var cliente in client)
+                    {
+                        <option value="@cliente.Id">@cliente.Nombre</option>
+                    }
+                </InputSelect>
+            </div> *@
+            <div class="form-group">
+                <label for="email">Correo Electrónico</label>
+                <InputText id="email" class="form-control" @bind-Value="nuevoRegistro.Correo" />
+                <ValidationMessage For="@(() => nuevoRegistro.Correo)" />
+            </div>
+            <!-- Asesor ID -->
+            <div class="col-12">
+                <label class="form-label">Asesor ID:</label>
+                <InputSelect class="form-control" @bind-Value="nuevoRegistro.AsesorId">
+                    <option value="">Seleccione un asesor</option>
+                    @foreach (var asesor in asesores)
+                    {
+                        <option value="@asesor.Id">@asesor.Nombre</option>
+                    }
+                </InputSelect>
+            </div>
+            <!-- Fecha -->
+    <div class="row g-3">
+        <!-- Fecha -->
+        <div class="col-6">
+            <label class="form-label">Fecha:</label>
+            <InputDate class="form-control" @bind-Value="nuevoRegistro.Fecha" />
+        </div>
+
+
+                <!-- Hora -->
+                <div class="d-flex justify-content-center align-items-center col-4" style="gap: 10px; font-family: Arial, sans-serif; font-size: 1.5rem;">
+                    <!-- Horas -->
+                    <InputNumber @bind-Value="nuevoRegistro.Horas"
+                                 class="form-control text-center"
+                                 style="width: 60px; height: 60px; font-size: 1.5rem; text-align: center; border-radius: 10px;"
+                                 Min="0" Max="23" />
+
+                    <!-- Separador -->
+                    <span style="font-size: 2rem;">:</span>
+
+                    <!-- Minutos -->
+                    <InputNumber @bind-Value="nuevoRegistro.minutos"
+                                 class="form-control text-center"
+                                 style="width: 60px; height: 60px; font-size: 1.5rem; text-align: center; border-radius: 10px;"
+                                 Min="0" Max="59" />
+                </div>
+
+    </div>
+            <!-- Estado -->
+            <div class="col-12">
+                <label class="form-label">Estado:</label>
+                <InputSelect class="form-control" @bind-Value="nuevoRegistro.Estado">
+                    @foreach (var estado in Enum.GetValues(typeof(Estado_Citas)))
+                    {
+                        <option value="@estado">@estado</option>
+                    }
+                </InputSelect>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <button class="btn btn-primary btn-lg w-100" type="submit">Guardar</button>
+        </div>
+    </EditForm>
+</div>
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <div class="alert @mensajeClase mt-4 text-center">
+        @mensaje
+    </div>
+}
+
+
+@code {
+    [Parameter]
+    public string empresa { get; set; }
+    [Parameter]
+    public int id { get; set; }
+
+
+    private List<empresaModel> Empresas = new();
+    private List<Clientes> client = new();
+
+    private List<AsesoresModel> asesores = new();
+    private CitasModel nuevoRegistro = new();
+    private string? mensaje;  
+    private string mensajeClase = "alert-info";
+    ProductosModel especialidad = new ProductosModel();
+    private List<CitasModel>? citas;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        try
+        {
+            // var empre = await _HttpClient.GetFromJsonAsync<empresaModel>($"api/Syscome/empresa/{id}");
+            // Empresas = JsonSerializer.Deserialize<empresaModel>(empre, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            // Realiza la solicitud a la API
+         // var response = await _HttpClient.GetAsync($"api/Syscome/producto/especialidad/{id.ToString()}");
+            var resp = await _HttpClient.GetStringAsync($"api/Syscome/producto/especialidad/{id.ToString()}");
+            especialidad = JsonSerializer.Deserialize<ProductosModel>(resp, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        
+
+            asesores = await _HttpClient.GetFromJsonAsync<List<AsesoresModel>>($"/api/Syscome/asesor/asesorxempre{especialidad.Especialidad}");
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"Error en la solicitud HTTP: {ex.Message}");
+        }
+        catch (JsonException ex)
+        {
+            Console.WriteLine($"Error en la deserialización del JSON: {ex.Message}");
+        }
+    }
+    private async Task crearCita()
+    {
+        try
+        {
+            // if (nuevoRegistro.ClienteId == null || nuevoRegistro.AsesorId == null)
+            // {
+            //     mensaje = "Debe completar todos los campos obligatorios.";
+            //     mensajeClase = "alert-danger";
+            //     return;
+            // }
+            if (nuevoRegistro.AsesorId == null)
+            {
+                mensaje = "Debe completar todos los campos obligatorios.";
+                mensajeClase = "alert-danger";
+                return;
+            }
+            nuevoRegistro.idempresa = id;
+            var response = await _HttpClient.PostAsJsonAsync("/api/Syscome/cita/Crear", nuevoRegistro);
+
+            if (response.IsSuccessStatusCode)
+            {
+                mensaje = "Registro creado exitosamente.";
+                mensajeClase = "alert-success";
+                nuevoRegistro = new();
+            }
+            else
+            {
+                mensaje = $"Error al crear el registro. Código: {response.StatusCode}";
+                mensajeClase = "alert-danger";
+            }
+
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"Error al crear el registro: {ex.Message}";
+        }
+    }
+}
+
+
+
+
+
+
