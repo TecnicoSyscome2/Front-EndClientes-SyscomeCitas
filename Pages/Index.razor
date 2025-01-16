@@ -54,7 +54,7 @@
     {
         try
         {
-            Empresas = await _HttpClient.GetFromJsonAsync<List<empresaModel>>("api/Syscome/Empresa");
+            Empresas = await _HttpClient.GetFromJsonAsync<List<empresaModel>>("Syscome/Empresa");
             EmpresasFiltradas = Empresas;
         }
         catch (Exception ex)

@@ -1,4 +1,4 @@
-@page "/HaztuCitaAhora.com/{empresa}/crear-registro/{id:int}"
+@page "/HaztuCitaAhora.com/{empresa}/crear-registro/{id:int}{idprod:long}"
 @using System.Text.Json
 
 @inject HttpClient _HttpClient
@@ -32,7 +32,7 @@
             </div>
             <!-- Asesor ID -->
             <div class="col-12">
-                <label class="form-label">Asesor ID:</label>
+                <label class="form-label">@nombreasesor</label>
                 <InputSelect class="form-control" @bind-Value="nuevoRegistro.AsesorId">
                     <option value="">Seleccione un asesor</option>
                     @foreach (var asesor in asesores)
@@ -100,6 +100,8 @@
     public string empresa { get; set; }
     [Parameter]
     public int id { get; set; }
+    [Parameter]
+    public int idprod { get; set; }
 
 
     private List<empresaModel> Empresas = new();
@@ -111,6 +113,7 @@
     private string mensajeClase = "alert-info";
     ProductosModel especialidad = new ProductosModel();
     private List<CitasModel>? citas;
+    private string nombreasesor = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -121,11 +124,12 @@
             // Empresas = JsonSerializer.Deserialize<empresaModel>(empre, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             // Realiza la solicitud a la API
          // var response = await _HttpClient.GetAsync($"api/Syscome/producto/especialidad/{id.ToString()}");
-            var resp = await _HttpClient.GetStringAsync($"api/Syscome/producto/especialidad/{id.ToString()}");
+            var resp = await _HttpClient.GetStringAsync($"Syscome/producto/especialidad/{id.ToString()}");
             especialidad = JsonSerializer.Deserialize<ProductosModel>(resp, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        
+            asesores = await _HttpClient.GetFromJsonAsync<List<AsesoresModel>>($"Syscome/asesor/asesorxempre{especialidad.Especialidad}");
+            nombreasesor = await _HttpClient.GetStringAsync($"Syscome/Empresa/nombreasesor{id}");
 
-            asesores = await _HttpClient.GetFromJsonAsync<List<AsesoresModel>>($"/api/Syscome/asesor/asesorxempre{especialidad.Especialidad}");
+           
         }
         catch (HttpRequestException ex)
         {
@@ -153,7 +157,7 @@
                 return;
             }
             nuevoRegistro.idempresa = id;
-            var response = await _HttpClient.PostAsJsonAsync("/api/Syscome/cita/Crear", nuevoRegistro);
+            var response = await _HttpClient.PostAsJsonAsync("Syscome/cita/Crear", nuevoRegistro);
 
             if (response.IsSuccessStatusCode)
             {

@@ -20,7 +20,5 @@ namespace SyscomeCitas.Clientes.Modelos
 
             public decimal? ValorTotal { get; set; }
 
-        public virtual ProductosModel? Productos { get; set; }
-        public virtual CitasModel? Citas { get; set; }
     }
 }

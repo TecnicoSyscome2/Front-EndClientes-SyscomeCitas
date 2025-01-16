@@ -36,4 +36,9 @@ namespace SyscomeCitas.Clientes.Modelos
         cancelada
        // Finalizada
     }
+    public class CitaConDetallesDTO
+    {
+        public CitasModel Cita { get; set; }
+        public List<CitasDetModel> Detalles { get; set; }
+    }
 }
